@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Creative Sufficiency Calculator</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 24px 60px;
+      background: #fff;
+      color: #111;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    p.subtitle {
+      font-size: 13px;
+      color: #666;
+      margin: 0 0 24px;
+    }
+    select, input[type="number"] {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+      background: #fff;
+    }
+    input[type="range"] { width: 100%; margin-top: 6px; }
+
+    :root {
+      --color-text-secondary: #666;
+      --color-background-secondary: #f5f5f5;
+      --color-background-success: #e8f7f2;
+      --color-text-success: #1D9E75;
+      --border-radius-md: 8px;
+    }
+
+    .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
+    .csc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+    .csc-grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
+    .csc-grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+    .csc-label{font-size:13px;color:var(--color-text-secondary);margin-bottom:4px;display:block;}
+    .csc-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:1rem;}
+    .csc-metric-label{font-size:13px;color:var(--color-text-secondary);margin:0 0 4px;}
+    .csc-metric-value{font-size:24px;font-weight:500;margin:0;}
+    .csc-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-secondary);margin:1.5rem 0 .5rem;}
+
+    @media(max-width:600px){
+      .csc-grid,.csc-grid3,.csc-grid4{grid-template-columns:1fr 1fr;}
+    }
+    @media(max-width:400px){
+      .csc-grid,.csc-grid3,.csc-grid4{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+
+<h1>Creative Sufficiency Calculator</h1>
+<p class="subtitle">Model how many creatives your budget can statistically support within a learning window — before switching to supercharge mode.</p>
+
+<p class="csc-section-title">Campaign inputs</p>
+<div class="csc-grid">
+  <div>
+    <label class="csc-label" for="budgetType">Budget represents</label>
+    <select id="budgetType">
+      <option value="total" selected>Total for the flight</option>
+      <option value="daily">Daily budget</option>
+    </select>
+  </div>
+  <div>
+    <label class="csc-label" for="budget">Budget ($)</label>
+    <input type="number" id="budget" value="50000" min="0" step="1000">
+  </div>
+  <div>
+    <label class="csc-label" for="cpm">Average CPM ($)</label>
+    <input type="number" id="cpm" value="12" min="0.01" step="0.1">
+  </div>
+  <div>
+    <label class="csc-label" for="ctr">Click-through rate (%)</label>
+    <input type="number" id="ctr" value="1.2" min="0" step="0.1">
+  </div>
+  <div>
+    <label class="csc-label" for="cvr">Conversion rate, click → conversion (%)</label>
+    <input type="number" id="cvr" value="3" min="0" step="0.1">
+  </div>
+</div>
+<p style="font-size:13px;color:#666;margin:8px 0 0;" id="out-budget-derived"></p>
+
+<p class="csc-section-title">Flight structure</p>
+<div class="csc-grid">
+  <div>
+    <label class="csc-label" for="flight">Flight period (days)</label>
+    <input type="number" id="flight" value="7" min="1" step="1">
+  </div>
+  <div>
+    <label class="csc-label" for="learnPct">Learning phase target — <span id="learnPctOut">25</span>% of flight</label>
+    <input type="range" id="learnPct" min="10" max="50" value="25" step="5">
+  </div>
+</div>
+<p style="font-size:13px;color:#666;margin:8px 0 0;" id="out-learn-derived"></p>
+
+<p class="csc-section-title">Statistical test settings</p>
+<div class="csc-grid">
+  <div>
+    <label class="csc-label" for="metric">Decision metric</label>
+    <select id="metric">
+      <option value="conv" selected>Conversion rate</option>
+      <option value="ctr">Click-through rate</option>
+    </select>
+  </div>
+  <div>
+    <label class="csc-label" for="conf">Confidence level</label>
+    <select id="conf">
+      <option value="80">80%</option>
+      <option value="85">85%</option>
+      <option value="90" selected>90%</option>
+      <option value="95">95%</option>
+      <option value="99">99%</option>
+    </select>
+  </div>
+  <div>
+    <label class="csc-label" for="power">Statistical power</label>
+    <select id="power">
+      <option value="70">70%</option>
+      <option value="75">75%</option>
+      <option value="80" selected>80%</option>
+      <option value="85">85%</option>
+      <option value="90">90%</option>
+      <option value="95">95%</option>
+    </select>
+  </div>
+  <div>
+    <label class="csc-label" for="mde">Minimum detectable effect — <span id="mdeOut">10</span>% relative lift</label>
+    <input type="range" id="mde" min="5" max="20" value="10" step="1">
+  </div>
+</div>
+
+<p class="csc-section-title">Estimated full-flight funnel</p>
+<div class="csc-grid3">
+  <div class="csc-card"><p class="csc-metric-label">Impressions</p><p class="csc-metric-value" id="out-impr">—</p></div>
+  <div class="csc-card"><p class="csc-metric-label">Clicks</p><p class="csc-metric-value" id="out-clicks">—</p></div>
+  <div class="csc-card"><p class="csc-metric-label">Conversions</p><p class="csc-metric-value" id="out-conv">—</p></div>
+</div>
+
+<p class="csc-section-title">Learning-phase creative limit</p>
+<div class="csc-grid4">
+  <div class="csc-card" style="background:#e8f7f2;">
+    <p class="csc-metric-label">Creative limit — exit early</p>
+    <p class="csc-metric-value" style="color:#1D9E75;" id="out-maxc-learn">—</p>
+  </div>
+  <div class="csc-card"><p class="csc-metric-label">Required volume / creative</p><p class="csc-metric-value" id="out-reqn">—</p></div>
+  <div class="csc-card"><p class="csc-metric-label">Days to exit learning</p><p class="csc-metric-value" id="out-days">—</p></div>
+  <div class="csc-card"><p class="csc-metric-label">Creative limit — full flight</p><p class="csc-metric-value" id="out-maxc-full">—</p></div>
+</div>
+<p style="font-size:13px;color:#666;margin:8px 0 0;" id="out-note"></p>
+<p style="font-size:13px;color:#666;margin:4px 0 0;" id="out-flight"></p>
+
+<p class="csc-section-title">Supercharge phase — after a winner is clear</p>
+<div class="csc-grid4">
+  <div class="csc-card"><p class="csc-metric-label">Days remaining</p><p class="csc-metric-value" id="out-sc-days">—</p></div>
+  <div class="csc-card"><p class="csc-metric-label">Impressions</p><p class="csc-metric-value" id="out-sc-impr">—</p></div>
+  <div class="csc-card"><p class="csc-metric-label">Clicks</p><p class="csc-metric-value" id="out-sc-clicks">—</p></div>
+  <div class="csc-card"><p class="csc-metric-label">Conversions</p><p class="csc-metric-value" id="out-sc-conv">—</p></div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:16px;margin:1.5rem 0 8px;font-size:12px;color:#666;">
+  <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#1D9E75;display:inline-block;"></span>Sufficient within learning window</span>
+  <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#D85A30;display:inline-block;"></span>Below threshold</span>
+  <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:2px;background:#BA7517;display:inline-block;"></span>Required volume per creative</span>
+</div>
+<div style="position:relative;width:100%;height:280px;">
+  <canvas id="csc-chart"></canvas>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+(function(){
+  var zConf = {80:1.282,85:1.440,90:1.645,95:1.960,99:2.576};
+  var zPow = {70:0.524,75:0.674,80:0.842,85:1.036,90:1.282,95:1.645};
+  var chart;
+
+  function fmt(n){ return Math.round(n).toLocaleString('en-US'); }
+
+  function calc(){
+    var budgetRaw = parseFloat(document.getElementById('budget').value) || 0;
+    var flightDays = parseFloat(document.getElementById('flight').value) || 1;
+    var budgetType = document.getElementById('budgetType').value;
+    var cpm = parseFloat(document.getElementById('cpm').value) || 0.01;
+    var ctr = (parseFloat(document.getElementById('ctr').value) || 0)/100;
+    var cvr = (parseFloat(document.getElementById('cvr').value) || 0)/100;
+    var metric = document.getElementById('metric').value;
+    var mde = parseFloat(document.getElementById('mde').value) || 10;
+    document.getElementById('mdeOut').textContent = mde;
+    var conf = parseInt(document.getElementById('conf').value);
+    var power = parseInt(document.getElementById('power').value);
+    var learnPct = parseFloat(document.getElementById('learnPct').value) || 25;
+    document.getElementById('learnPctOut').textContent = learnPct;
+
+    var totalBudget = budgetType==='daily' ? budgetRaw*flightDays : budgetRaw;
+    var dailyBudget = totalBudget/flightDays;
+    var derivedNote = budgetType==='daily'
+      ? ('Daily budget: $'+fmt(budgetRaw)+' × '+flightDays+' days = $'+fmt(totalBudget)+' total')
+      : ('Total budget: $'+fmt(totalBudget)+' over '+flightDays+' days ($'+fmt(dailyBudget)+'/day)');
+    document.getElementById('out-budget-derived').textContent = derivedNote;
+
+    var learningDays = flightDays*learnPct/100;
+    var superchargeDays = flightDays-learningDays;
+    document.getElementById('out-learn-derived').textContent =
+      learningDays.toFixed(1)+' days of learning, then '+superchargeDays.toFixed(1)+' days supercharged once a winner is clear.';
+
+    var totalImpressions = totalBudget/cpm*1000;
+    var dailyImpressions = totalImpressions/flightDays;
+    var learningWindowImpressions = dailyImpressions*learningDays;
+    var superchargeImpressions = totalImpressions-learningWindowImpressions;
+
+    var clicksTotal = totalImpressions*ctr, conversionsTotal = clicksTotal*cvr;
+    var superchargeClicks = superchargeImpressions*ctr, superchargeConversions = superchargeClicks*cvr;
+
+    document.getElementById('out-impr').textContent = fmt(totalImpressions);
+    document.getElementById('out-clicks').textContent = fmt(clicksTotal);
+    document.getElementById('out-conv').textContent = fmt(conversionsTotal);
+
+    document.getElementById('out-sc-days').textContent = superchargeDays.toFixed(1)+' days';
+    document.getElementById('out-sc-impr').textContent = fmt(superchargeImpressions);
+    document.getElementById('out-sc-clicks').textContent = fmt(superchargeClicks);
+    document.getElementById('out-sc-conv').textContent = fmt(superchargeConversions);
+
+    var p1 = metric==='ctr' ? ctr : ctr*cvr;
+    if(p1<=0) p1 = 0.0001;
+    var p2 = p1*(1+mde/100);
+    var zA = zConf[conf], zB = zPow[power];
+    var reqN = Math.ceil(Math.pow(zA+zB,2)*(p1*(1-p1)+p2*(1-p2))/Math.pow(p2-p1,2));
+    document.getElementById('out-reqn').textContent = fmt(reqN)+' impr';
+
+    var maxCreativesLearn = learningWindowImpressions>0 ? Math.floor(learningWindowImpressions/reqN) : 0;
+    var maxCreativesFull = totalImpressions>0 ? Math.floor(totalImpressions/reqN) : 0;
+    document.getElementById('out-maxc-learn').textContent = maxCreativesLearn>0 ? maxCreativesLearn : '0';
+    document.getElementById('out-maxc-full').textContent = maxCreativesFull>0 ? maxCreativesFull : '0';
+
+    var note = document.getElementById('out-note');
+    var flightNote = document.getElementById('out-flight');
+
+    if(maxCreativesLearn<1){
+      note.textContent = 'Even one creative may not reach significance within the learning window at this budget — increase budget, extend the learning percentage, raise the MDE, or relax confidence/power.';
+      document.getElementById('out-days').textContent = '—';
+      flightNote.textContent = '';
+    } else {
+      var pcImpr = learningWindowImpressions/maxCreativesLearn, pcClicks = pcImpr*ctr, pcConv = pcClicks*cvr;
+      note.textContent = 'At '+maxCreativesLearn+' creatives, each gets roughly '+fmt(pcImpr)+' impressions, '+fmt(pcClicks)+' clicks, and '+fmt(pcConv)+' conversions during the learning window.';
+
+      var dailyPerCreative = dailyImpressions/maxCreativesLearn;
+      var daysNeeded = dailyPerCreative>0 ? Math.ceil(reqN/dailyPerCreative) : Infinity;
+      document.getElementById('out-days').textContent = isFinite(daysNeeded) ? (daysNeeded+' days') : '—';
+
+      var buffer = learningDays-daysNeeded;
+      if(buffer>=0){
+        flightNote.textContent = 'On pace to exit learning by day '+daysNeeded+' — '+buffer.toFixed(1)+' day(s) of buffer before the '+learningDays.toFixed(1)+'-day target.';
+      } else {
+        flightNote.textContent = 'Needs about '+daysNeeded+' days — '+Math.abs(buffer).toFixed(1)+' more than your '+learningDays.toFixed(1)+'-day learning target. Run fewer creatives to fit the window.';
+      }
+    }
+
+    var maxBars = Math.min(24, Math.max(10, maxCreativesLearn+4));
+    var labels = [], data = [], colors = [], lineData = [];
+    for(var i=1;i<=maxBars;i++){
+      var v = learningWindowImpressions/i;
+      labels.push(String(i));
+      data.push(Math.round(v));
+      colors.push(v>=reqN ? '#1D9E75' : '#D85A30');
+      lineData.push(reqN);
+    }
+
+    if(!chart){
+      var ctx = document.getElementById('csc-chart');
+      chart = new Chart(ctx, {
+        type:'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {type:'bar', label:'Volume per creative', data:data, backgroundColor:colors},
+            {type:'line', label:'Required volume', data:lineData, borderColor:'#BA7517', borderDash:[6,4], pointRadius:0, borderWidth:2}
+          ]
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{display:false}},
+          scales:{
+            x:{title:{display:true,text:'Number of creatives'}},
+            y:{title:{display:true,text:'Volume in learning window'},ticks:{callback:function(v){return fmt(v);}}}
+          }
+        }
+      });
+    } else {
+      chart.data.labels = labels;
+      chart.data.datasets[0].data = data;
+      chart.data.datasets[0].backgroundColor = colors;
+      chart.data.datasets[1].data = lineData;
+      chart.update();
+    }
+  }
+
+  ['budget','flight','budgetType','cpm','ctr','cvr','metric','mde','conf','power','learnPct'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', calc);
+    document.getElementById(id).addEventListener('change', calc);
+  });
+
+  calc();
+})();
+</script>
+
+</body>
+</html>
